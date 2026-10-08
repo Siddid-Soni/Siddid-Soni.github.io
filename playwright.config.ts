@@ -4,11 +4,11 @@ export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 30_000,
   expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.02 } },
-  use: { baseURL: 'http://localhost:4321' },
+  use: { baseURL: 'http://localhost:4329' },
   webServer: {
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4321',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run build && npx astro preview --port 4329 --ignore-lock',
+    url: 'http://localhost:4329',
+    reuseExistingServer: false,
     timeout: 120_000,
   },
   projects: [

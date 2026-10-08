@@ -1,0 +1,9 @@
+---
+interface Props { slug: string; title: string; summary: string; stack: string[] }
+const { slug, title, summary, stack } = Astro.props;
+---
+<a class="card" href={`/projects/${slug}/`} data-project={slug}>
+  <h3>{title}</h3>
+  <p>{summary}</p>
+  <ul class="tags" aria-label="Stack">{stack.map((s) => <li>{s}</li>)}</ul>
+</a>

@@ -1,0 +1,13 @@
+---
+import type { SectionDef } from '../config';
+interface Props { def: SectionDef; index: number; night?: boolean }
+const { def, index, night = index >= 3 } = Astro.props;
+const Tag = index === 0 ? 'h1' : 'h2';
+---
+<section class={`sec sec--${def.align}`} id={def.id} data-index={index} aria-labelledby={`${def.id}-h`}>
+  <div class="content">
+    <p class="kicker">{def.time} · {def.label}</p>
+    <Tag id={`${def.id}-h`} class={night ? 'neon' : undefined}>{def.heading}</Tag>
+    <slot />
+  </div>
+</section>

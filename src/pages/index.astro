@@ -1,4 +1,63 @@
 ---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import TimeScrubber from '../components/TimeScrubber.astro';
+import Clock from '../components/Clock.astro';
+import { SITE, SECTIONS } from '../config';
+
+const featured = (await getCollection('projects', (p) => p.data.featured))
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 4);
+const [hero, about, projects, skills, after, contact] = SECTIONS;
 ---
-<html lang="en"><head><meta charset="utf-8" /><title>Siddid Soni</title></head>
-<body><h1>Siddid Soni</h1></body></html>
+<Base>
+  <header class="chrome">
+    <a class="logo" href="#hero">{SITE.name}</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#projects">Work</a><a href="#about">About</a><a href="#contact">Contact</a>
+      <a href={SITE.resume}>Résumé ↗</a>
+    </nav>
+    <Clock />
+  </header>
+  <div id="room" class="room" aria-hidden="true"></div>
+  <TimeScrubber />
+  <main id="main">
+    <Section def={hero} index={0}>
+      <p class="lead">{SITE.role}. {SITE.tagline}</p>
+      <a class="cue" href="#about">Scroll to start the day ↓</a>
+    </Section>
+    <Section def={about} index={1}>
+      <p>{SITE.about}</p>
+      <p class="muted">{SITE.location}</p>
+    </Section>
+    <Section def={projects} index={2}>
+      <div class="cards">
+        {featured.map((p) => <ProjectCard slug={p.id} title={p.data.title} summary={p.data.summary} stack={p.data.stack} />)}
+      </div>
+    </Section>
+    <Section def={skills} index={3}>
+      <div class="skills">
+        {SITE.skills.map((g) => (
+          <div><h3>{g.area}</h3><ul class="tags">{g.items.map((s) => <li>{s}</li>)}</ul></div>
+        ))}
+      </div>
+    </Section>
+    <Section def={after} index={4}>
+      <ul class="after">
+        {SITE.afterHours.map((a) => (
+          <li><strong>{a.href ? <a href={a.href}>{a.title}</a> : a.title}</strong> · {a.text}</li>
+        ))}
+      </ul>
+    </Section>
+    <Section def={contact} index={5}>
+      <ul class="contact">
+        <li><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+        <li><a href={SITE.github}>GitHub</a></li>
+        <li><a href={SITE.linkedin}>LinkedIn</a></li>
+        <li><a href={SITE.resume}>Résumé (PDF)</a></li>
+      </ul>
+    </Section>
+  </main>
+</Base>
