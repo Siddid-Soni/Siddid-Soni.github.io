@@ -1,0 +1,25 @@
+---
+interface Props { projects: { slug: string; title: string; summary: string; stack: string[]; screenshot?: string; accent: [string, string] }[] }
+const { projects } = Astro.props;
+---
+<div id="room" class="room" aria-hidden="true" data-projects={JSON.stringify(projects)}>
+  <div class="stills"></div>
+</div>
+<script>
+  import { initPage } from '../scripts/page';
+  initPage();
+  const host = document.getElementById('room')!;
+  const boot = () => {
+    import('../scene/main')
+      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]') }))
+      .catch(() => host.classList.add('fallback'));
+  };
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(boot, { timeout: 1500 }) : setTimeout(boot, 200));
+  if (document.readyState === 'complete') requestAnimationFrame(idle);
+  else addEventListener('load', () => requestAnimationFrame(idle), { once: true });
+</script>
+<style>
+  .room :global(canvas) { width: 100%; height: 100%; display: block; }
+  .room.cut :global(canvas) { animation: cut 300ms ease-out; }
+  @keyframes cut { from { opacity: 0; } to { opacity: 1; } }
+</style>

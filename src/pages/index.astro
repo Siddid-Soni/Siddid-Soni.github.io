@@ -5,6 +5,7 @@ import Section from '../components/Section.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import TimeScrubber from '../components/TimeScrubber.astro';
 import Clock from '../components/Clock.astro';
+import RoomCanvas from '../components/RoomCanvas.astro';
 import { SITE, SECTIONS } from '../config';
 
 const featured = (await getCollection('projects', (p) => p.data.featured))
@@ -21,7 +22,7 @@ const [hero, about, projects, skills, after, contact] = SECTIONS;
     </nav>
     <Clock />
   </header>
-  <div id="room" class="room" aria-hidden="true"></div>
+  <RoomCanvas projects={featured.map((p) => ({ slug: p.id, title: p.data.title, summary: p.data.summary, stack: p.data.stack, screenshot: p.data.screenshot, accent: p.data.accent }))} />
   <TimeScrubber />
   <main id="main">
     <Section def={hero} index={0}>
