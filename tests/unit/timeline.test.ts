@@ -115,3 +115,28 @@ describe('frameOffset', () => {
     expect(o.y).toBeCloseTo(0.22 * 844);
   });
 });
+
+describe('createFrameSampler (low-power check)', () => {
+  it('ignores pauses between bursts of animation', async () => {
+    const { createFrameSampler } = await import('../../src/scene/timeline');
+    const sample = createFrameSampler(59);
+    let t = 0, avg: number | null = null;
+    for (let i = 0; i < 30; i++) avg = sample((t += 16.7)) ?? avg; // parallax settles
+    t += 3000; // visitor stops to read
+    for (let i = 0; i < 31 && avg == null; i++) avg = sample((t += 16.7)) ?? avg;
+    expect(avg).not.toBeNull();
+    expect(avg!).toBeLessThan(1000 / 24);
+  });
+  it('reports a slow device', async () => {
+    const { createFrameSampler } = await import('../../src/scene/timeline');
+    const sample = createFrameSampler(59);
+    let t = 0, avg: number | null = null;
+    for (let i = 0; i < 60; i++) avg = sample((t += 50)) ?? avg;
+    expect(avg).toBeCloseTo(50);
+  });
+  it('reports only once', async () => {
+    const { createFrameSampler } = await import('../../src/scene/timeline');
+    const sample = createFrameSampler(2);
+    expect([sample(0), sample(16), sample(32), sample(48)]).toEqual([null, null, 16, null]);
+  });
+});

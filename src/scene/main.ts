@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildRoom } from './room';
 import { createLights, applyLighting } from './lighting';
-import { damp, frameOffset, sampleTimeline } from './timeline';
+import { createFrameSampler, damp, frameOffset, sampleTimeline } from './timeline';
 import { createMonitor, type MonitorProject } from './monitor';
 
 export interface StartOptions { projects: MonitorProject[]; still?: number }
@@ -78,7 +78,8 @@ export async function start(host: HTMLElement, opts: StartOptions) {
   let mouse = { x: 0, y: 0 }, smoothMouse = { x: 0, y: 0 };
   let dirty = true, raf = 0, last = performance.now(), lastIdle = 0, lastIndex = -1;
   let w = 0, h = 0;
-  let stillFrames = 0, frames = 0, firstFrameAt = 0, restores = 0, lost = false;
+  let stillFrames = 0, restores = 0, lost = false;
+  const sampleFrame = createFrameSampler();
 
   const resize = () => {
     w = host.clientWidth; h = host.clientHeight;
@@ -126,10 +127,11 @@ export async function start(host: HTMLElement, opts: StartOptions) {
       if (++stillFrames === 2) host.dataset.stillReady = 'true';
       else if (stillFrames < 2) dirty = true; // render on demand would otherwise stop after frame 1
     }
-    // Low-power check: count only frames rendered while animating, so idle gaps don't skew the average.
+    // Low-power check (spec §11): average of the first 60 animating frames, pauses excluded.
     if (settling || idle) {
-      if (frames === 0) firstFrameAt = now;
-      if (++frames === 60 && (now - firstFrameAt) / 59 > 1000 / 24) {
+      const avg = sampleFrame(now);
+      if (avg != null) host.dataset.frameAvg = avg.toFixed(1);
+      if (avg != null && avg > 1000 / 24) {
         renderer.shadowMap.enabled = false;
         lights.sun.castShadow = false;
         renderer.setPixelRatio(1);

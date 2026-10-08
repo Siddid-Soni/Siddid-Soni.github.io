@@ -72,3 +72,20 @@ export function frameOffset(viewOffset: number, width: number, height: number) {
   if (width < 1024) return { x: -viewOffset * 0.6 * width, y: 0 };
   return { x: -viewOffset * width, y: 0 };
 }
+
+/**
+ * Averages the intervals between consecutive animating frames for the low-power check. Gaps longer
+ * than maxGapMs (the visitor paused, render-on-demand went idle) are not intervals and are skipped.
+ * Returns the average once `count` intervals are collected (once only), otherwise null.
+ */
+export function createFrameSampler(count = 59, maxGapMs = 250) {
+  let prev = -1, sum = 0, n = 0, done = false;
+  return (now: number): number | null => {
+    if (done) return null;
+    if (prev >= 0 && now - prev <= maxGapMs) { sum += now - prev; n++; }
+    prev = now;
+    if (n < count) return null;
+    done = true;
+    return sum / n;
+  };
+}
