@@ -5,7 +5,8 @@ import { mkdirSync } from 'node:fs';
 import sharp from 'sharp';
 
 const NAME = 'Siddid Soni';
-const server = spawn('npx', ['astro', 'preview', '--port', '4322', '--ignore-lock'], { stdio: 'ignore' });
+// Spawn astro directly (not via npx) so server.kill() stops the actual server process.
+const server = spawn(process.execPath, ['node_modules/astro/bin/astro.mjs', 'preview', '--port', '4322', '--ignore-lock'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 try {
