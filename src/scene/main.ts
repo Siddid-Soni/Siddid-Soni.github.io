@@ -6,7 +6,49 @@ import { createMonitor, type MonitorProject } from './monitor';
 
 export interface StartOptions { projects: MonitorProject[]; still?: number }
 
-export function start(host: HTMLElement, opts: StartOptions) {
+const yieldToMain = () => new Promise<void>((r) => setTimeout(r, 0));
+
+/** Waits for the GPU to drain queued work without blocking the main thread (WebGL2 fence, polled). */
+async function gpuIdle(gl: WebGLRenderingContext | WebGL2RenderingContext) {
+  if (!('fenceSync' in gl)) return yieldToMain();
+  const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+  if (!sync) return yieldToMain();
+  gl.flush();
+  while (gl.clientWaitSync(sync, 0, 0) === gl.TIMEOUT_EXPIRED) await new Promise((r) => setTimeout(r, 4));
+  gl.deleteSync(sync);
+}
+
+/**
+ * Links shader programs one at a time: renders a single representative mesh per distinct material
+ * setup, yielding between renders, so program linking is spread over many short tasks instead of
+ * one long first frame (KHR_parallel_shader_compile isn't available everywhere). With a software GPU the
+ * real cost lands in the GPU process, so each step waits on a fence instead of blocking.
+ */
+async function warmUp(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
+  const meshes: THREE.Mesh[] = [];
+  scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+  const groups = new Map<string, THREE.Mesh>();
+  for (const m of meshes) {
+    const mat = m.material as THREE.MeshStandardMaterial;
+    const key = [mat.type, mat.flatShading, !!mat.map, mat.transparent, m.castShadow].join('|');
+    if (!groups.has(key)) groups.set(key, m);
+  }
+  const gl = renderer.getContext();
+  const visible = meshes.map((m) => m.visible);
+  const culled = meshes.map((m) => m.frustumCulled);
+  meshes.forEach((m) => (m.frustumCulled = false)); // the warm-up camera isn't placed yet; draw everything
+  for (const rep of groups.values()) {
+    meshes.forEach((m) => (m.visible = m === rep));
+    renderer.render(scene, camera);
+    await gpuIdle(gl);
+  }
+  meshes.forEach((m, i) => { m.visible = visible[i]; m.frustumCulled = culled[i]; });
+  renderer.render(scene, camera); // full scene once, so the first visible frame finds everything uploaded
+  await gpuIdle(gl);
+}
+
+/** Boots in stages that yield to the main thread so no single task blocks input for long. */
+export async function start(host: HTMLElement, opts: StartOptions) {
   const narrow = innerWidth < 760;
   const reduced = opts.still != null || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const parallax = !reduced && !narrow && matchMedia('(pointer: fine)').matches;
@@ -17,13 +59,14 @@ export function start(host: HTMLElement, opts: StartOptions) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const canvas = renderer.domElement;
-  host.prepend(canvas);
+  await yieldToMain();
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 200);
   const lights = createLights(scene, narrow ? 1024 : 2048);
   const room = buildRoom({ neonScale: 0.3 });
   scene.add(room.group);
+  await yieldToMain();
   const monitor = createMonitor(opts.projects, { cycle: !reduced });
   room.screen.material.map = monitor.texture;
   room.screen.material.needsUpdate = true;
@@ -96,6 +139,12 @@ export function start(host: HTMLElement, opts: StartOptions) {
     }
     host.dataset.scene = 'ready';
   };
+  // In the DOM (invisible) during warm-up so the canvas's first composite happens on a cheap frame.
+  canvas.style.opacity = '0';
+  host.prepend(canvas);
+  monitor.tick(performance.now()); // upload the screen texture during warm-up too
+  await warmUp(renderer, scene, camera);
+  canvas.style.opacity = '';
   raf = requestAnimationFrame(frame);
 
   canvas.addEventListener('webglcontextlost', (e) => {

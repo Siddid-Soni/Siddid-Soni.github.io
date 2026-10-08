@@ -15,6 +15,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm test
       - run: npm run build
+      - run: npm run budget
+      - run: npx lhci autorun
       - run: npm run test:e2e
         env: { CI: 'true' }
       - uses: actions/upload-pages-artifact@v3
