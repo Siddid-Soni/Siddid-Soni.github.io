@@ -8,7 +8,7 @@ export interface StartOptions { projects: MonitorProject[]; still?: number }
 
 export function start(host: HTMLElement, opts: StartOptions) {
   const narrow = innerWidth < 760;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = opts.still != null || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const parallax = !reduced && !narrow && matchMedia('(pointer: fine)').matches;
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, failIfMajorPerformanceCaveat: false });
@@ -35,7 +35,7 @@ export function start(host: HTMLElement, opts: StartOptions) {
   let mouse = { x: 0, y: 0 }, smoothMouse = { x: 0, y: 0 };
   let dirty = true, raf = 0, last = performance.now(), lastIdle = 0, lastIndex = -1;
   let w = 0, h = 0;
-  let frames = 0, firstFrameAt = 0, restores = 0, lost = false;
+  let stillFrames = 0, frames = 0, firstFrameAt = 0, restores = 0, lost = false;
 
   const resize = () => {
     w = host.clientWidth; h = host.clientHeight;
@@ -79,6 +79,10 @@ export function start(host: HTMLElement, opts: StartOptions) {
     camera.updateProjectionMatrix();
     applyLighting(scene, lights, room, s.lighting, idle ? Math.sin(now / 180) * 0.5 + 0.5 : 0);
     renderer.render(scene, camera);
+    if (opts.still != null) {
+      if (++stillFrames === 2) host.dataset.stillReady = 'true';
+      else if (stillFrames < 2) dirty = true; // render on demand would otherwise stop after frame 1
+    }
     // Low-power check: count only frames rendered while animating, so idle gaps don't skew the average.
     if (settling || idle) {
       if (frames === 0) firstFrameAt = now;

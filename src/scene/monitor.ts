@@ -5,6 +5,9 @@ export interface MonitorProject { slug: string; title: string; summary: string; 
 
 const W = 1024, H = 640, FADE = 250;
 
+// drawCodeScreen lays out for 512×384; scale it up to fill the screen canvas.
+const codeScreen = (x: CanvasRenderingContext2D) => { x.save(); x.scale(W / 512, H / 384); drawCodeScreen(x, 512, 384); x.restore(); };
+
 export const cycleIndex = (timeMs: number, count: number, periodMs = 4000) =>
   count === 0 ? -1 : Math.floor(timeMs / periodMs) % count;
 
@@ -38,7 +41,7 @@ export function createMonitor(projects: MonitorProject[], opts: { cycle?: boolea
   };
   const drawSlug = (slug: string | null) => {
     const p = slug ? projects.find((q) => q.slug === slug) : undefined;
-    if (!p) { drawCodeScreen(x, W, H); return; }
+    if (!p) { codeScreen(x); return; }
     const img = images.get(p.slug);
     if (img) x.drawImage(img, 0, 0, W, H); else drawCard(p);
   };
@@ -51,7 +54,7 @@ export function createMonitor(projects: MonitorProject[], opts: { cycle?: boolea
     )).then(() => resolveReady());
   };
 
-  drawCodeScreen(x, W, H);
+  codeScreen(x);
 
   return {
     texture,

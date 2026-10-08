@@ -11,9 +11,12 @@ const { projects } = Astro.props;
   import { initPage } from '../scripts/page';
   initPage();
   const host = document.getElementById('room')!;
+  const q = new URLSearchParams(location.search).get('still');
+  const still = q != null && /^[0-5]$/.test(q) ? Number(q) : undefined;
+  if (still != null) document.documentElement.classList.add('still-mode');
   const boot = () => {
     import('../scene/main')
-      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]') }))
+      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]'), still }))
       .catch(() => host.classList.add('fallback'));
   };
   const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(boot, { timeout: 1500 }) : setTimeout(boot, 200));
