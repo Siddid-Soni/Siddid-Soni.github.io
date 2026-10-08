@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { buildRoom } from './room';
 import { createLights, applyLighting } from './lighting';
 import { damp, frameOffset, sampleTimeline } from './timeline';
+import { createMonitor, type MonitorProject } from './monitor';
 
-export interface StartOptions { projects: unknown[]; still?: number }
+export interface StartOptions { projects: MonitorProject[]; still?: number }
 
 export function start(host: HTMLElement, opts: StartOptions) {
   const narrow = innerWidth < 760;
@@ -23,6 +24,11 @@ export function start(host: HTMLElement, opts: StartOptions) {
   const lights = createLights(scene, narrow ? 1024 : 2048);
   const room = buildRoom({ neonScale: 0.3 });
   scene.add(room.group);
+  const monitor = createMonitor(opts.projects, { cycle: !reduced });
+  room.screen.material.map = monitor.texture;
+  room.screen.material.needsUpdate = true;
+  const onFocus = (e: Event) => { monitor.focus((e as CustomEvent<{ slug: string | null }>).detail.slug); dirty = true; };
+  addEventListener('portfolio:project-focus', onFocus);
 
   let target = opts.still ?? 0;
   let current = target;
@@ -54,7 +60,8 @@ export function start(host: HTMLElement, opts: StartOptions) {
     const settling = Math.abs(current - target) > 1e-4 || Math.abs(smoothMouse.x - mouse.x) + Math.abs(smoothMouse.y - mouse.y) > 1e-3;
     const s = sampleTimeline(current, undefined, { reducedMotion: reduced });
     const idle = !reduced && s.lighting.night > 0.5 && now - lastIdle > 1000 / 30;
-    if (!dirty && !settling && !idle) { host.dataset.settled = 'true'; return; }
+    const monitorChanged = monitor.tick(now);
+    if (!dirty && !settling && !idle && !monitorChanged) { host.dataset.settled = 'true'; return; }
     if (idle) lastIdle = now;
     dirty = false;
     host.dataset.settled = 'false';
@@ -87,6 +94,7 @@ export function start(host: HTMLElement, opts: StartOptions) {
     dispose() {
       cancelAnimationFrame(raf);
       removeEventListener('portfolio:progress', onProgress);
+      removeEventListener('portfolio:project-focus', onFocus);
       removeEventListener('resize', resize);
       removeEventListener('pointermove', onPointer);
       document.removeEventListener('visibilitychange', onVisibility);
