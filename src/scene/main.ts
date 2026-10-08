@@ -35,6 +35,7 @@ export function start(host: HTMLElement, opts: StartOptions) {
   let mouse = { x: 0, y: 0 }, smoothMouse = { x: 0, y: 0 };
   let dirty = true, raf = 0, last = performance.now(), lastIdle = 0, lastIndex = -1;
   let w = 0, h = 0;
+  let frames = 0, firstFrameAt = 0, restores = 0, lost = false;
 
   const resize = () => {
     w = host.clientWidth; h = host.clientHeight;
@@ -78,18 +79,44 @@ export function start(host: HTMLElement, opts: StartOptions) {
     camera.updateProjectionMatrix();
     applyLighting(scene, lights, room, s.lighting, idle ? Math.sin(now / 180) * 0.5 + 0.5 : 0);
     renderer.render(scene, camera);
+    // Low-power check: count only frames rendered while animating, so idle gaps don't skew the average.
+    if (settling || idle) {
+      if (frames === 0) firstFrameAt = now;
+      if (++frames === 60 && (now - firstFrameAt) / 59 > 1000 / 24) {
+        renderer.shadowMap.enabled = false;
+        lights.sun.castShadow = false;
+        renderer.setPixelRatio(1);
+        resize();
+        host.dataset.lowPower = 'true';
+      }
+    }
     host.dataset.scene = 'ready';
   };
   raf = requestAnimationFrame(frame);
 
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    lost = true;
+    cancelAnimationFrame(raf);
+    host.classList.add('fallback');
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    if (restores++ > 0) return; // one restore only; a second loss stays in fallback
+    lost = false;
+    host.classList.remove('fallback');
+    dirty = true;
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  });
+
   const onVisibility = () => {
     if (document.hidden) cancelAnimationFrame(raf);
-    else { last = performance.now(); dirty = true; raf = requestAnimationFrame(frame); }
+    else if (!lost) { last = performance.now(); dirty = true; raf = requestAnimationFrame(frame); }
   };
   document.addEventListener('visibilitychange', onVisibility);
 
   return {
-    renderer, room, scene,
+    renderer, room, scene, lights,
     markDirty() { dirty = true; },
     dispose() {
       cancelAnimationFrame(raf);

@@ -3,7 +3,9 @@ interface Props { projects: { slug: string; title: string; summary: string; stac
 const { projects } = Astro.props;
 ---
 <div id="room" class="room" aria-hidden="true" data-projects={JSON.stringify(projects)}>
-  <div class="stills"></div>
+  <div class="stills">
+    {[0, 1, 2, 3, 4, 5].map((i) => <img class="still" src={`/fallback/${i}.webp`} alt="" data-index={i} loading="lazy" decoding="async" />)}
+  </div>
 </div>
 <script>
   import { initPage } from '../scripts/page';

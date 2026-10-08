@@ -7,6 +7,8 @@ export function initPage() {
   const sections = [...document.querySelectorAll<HTMLElement>('.sec')];
   const clock = document.getElementById('clock');
   const scrub = [...document.querySelectorAll<HTMLAnchorElement>('.scrubber a')];
+  const room = document.getElementById('room');
+  const stills = [...document.querySelectorAll<HTMLElement>('.still')];
   let tops: number[] = [];
   let theme = root.dataset.theme ?? 'day';
   let active = -1;
@@ -31,6 +33,9 @@ export function initPage() {
       active = s.index;
       scrub.forEach((a, i) => (i === active ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
     }
+    if (room?.classList.contains('fallback')) {
+      stills.forEach((el, i) => { el.style.opacity = String(Math.max(0, 1 - Math.abs(f - i))); });
+    }
   };
   const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
 
@@ -39,6 +44,7 @@ export function initPage() {
   addEventListener('scroll', schedule, { passive: true });
   addEventListener('resize', () => { measure(); schedule(); });
   new ResizeObserver(() => { measure(); schedule(); }).observe(document.body);
+  if (room) new MutationObserver(schedule).observe(room, { attributes: true, attributeFilter: ['class'] });
 
   const focus = (slug: string | null) => dispatchEvent(new CustomEvent('portfolio:project-focus', { detail: { slug } }));
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((el) => {
