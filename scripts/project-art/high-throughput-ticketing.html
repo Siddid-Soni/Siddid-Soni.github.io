@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- Monitor art for High-Throughput Ticketing, rendered to public/projects/*.webp by scripts/render-projects.mjs. -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'Inter Tight'; font-weight: 800; src: url(../../node_modules/@fontsource/inter-tight/files/inter-tight-latin-800-normal.woff2); }
+  @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: url(../../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-600-normal.woff2); }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1280px; height: 800px; overflow: hidden; color: #fff4ea; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    background: radial-gradient(120% 90% at 70% 10%, #3a1a0c 0%, #170b07 55%, #0d0705 100%); padding: 48px 64px 52px; display: grid;
+    grid-template: auto minmax(0, 1fr) auto / 330px 1fr; gap: 26px 40px; }
+  header { grid-column: 1 / -1; display: flex; align-items: end; justify-content: space-between; }
+  .kick { font-size: 18px; letter-spacing: .18em; color: #ff9a5a; display: flex; align-items: center; gap: 14px; }
+  .live { width: 12px; height: 12px; border-radius: 50%; background: #ff4d2e; box-shadow: 0 0 16px #ff4d2e; }
+  h1 { font: 800 54px/1 'Inter Tight', sans-serif; letter-spacing: -0.035em; margin-top: 12px; white-space: nowrap; }
+  .chips { display: flex; gap: 8px; padding-bottom: 6px; }
+  .chips span { white-space: nowrap; font-size: 15px; padding: 8px 12px; border-radius: 999px; border: 1.5px solid #ff9a5a55; color: #ffc9a0; }
+  .queue { border: 1.5px solid #ffffff1c; border-radius: 22px; padding: 24px 26px; display: flex; flex-direction: column; gap: 18px; background: #ffffff08; }
+  .label { font-size: 15px; letter-spacing: .16em; color: #ffb27a; }
+  .big { font: 800 52px/1 'Inter Tight', sans-serif; letter-spacing: -0.02em; }
+  .dots { display: grid; grid-template-columns: repeat(14, 1fr); gap: 7px; margin-top: auto; }
+  .dots i { aspect-ratio: 1; border-radius: 50%; background: #ffffff26; }
+  .dots i.in { background: #ffb347; box-shadow: 0 0 8px #ffb34788; }
+  .gate { font-size: 16px; color: #ffd9bd; line-height: 1.6; }
+  .map { border: 1.5px solid #ffffff1c; border-radius: 22px; padding: 22px 30px; background: #ffffff08; display: flex; flex-direction: column; gap: 16px; }
+  .stage { height: 30px; border-radius: 0 0 50% 50% / 0 0 100% 100%; background: linear-gradient(#ff8a3d, #ff5a2e); color: #2a0d03; font-size: 14px;
+    letter-spacing: .3em; display: grid; place-items: center; margin: 0 80px; }
+  .seats { display: grid; grid-template-columns: repeat(24, 1fr); gap: 6px; flex: 1; align-content: center; }
+  .seats i { aspect-ratio: 1.6; border-radius: 4px 4px 2px 2px; background: #ffffff1f; }
+  .seats i.sold { background: #ff6a3d; }
+  .seats i.held { background: transparent; box-shadow: inset 0 0 0 2px #ffd36a; }
+  .legend { display: flex; gap: 22px; font-size: 14px; color: #ffd9bd; }
+  .legend b { display: inline-block; width: 14px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 8px; }
+  footer { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .stat { border-top: 2px solid #ff9a5a66; padding-top: 14px; }
+  .stat .big { font-size: 42px; margin-top: 8px; }
+  .stat:last-child .big { color: #6affc8; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="kick"><span class="live"></span>FLASH SALE · ON SALE NOW</p>
+      <h1>High-Throughput Ticketing</h1>
+    </div>
+    <div class="chips"><span>Rust</span><span>Actix-Web</span><span>Redis</span><span>Kafka</span><span>Postgres</span></div>
+  </header>
+  <section class="queue">
+    <p class="label">WAITING ROOM</p>
+    <p class="big">50,000</p>
+    <p class="gate">buyers in a Kafka-ordered<br />queue, let in to shop<br />a few thousand at a time</p>
+    <div class="dots" id="dots"></div>
+  </section>
+  <section class="map">
+    <div class="stage">STAGE</div>
+    <div class="seats" id="seats"></div>
+    <div class="legend"><span><b style="background:#ff6a3d"></b>Sold</span><span><b style="box-shadow:inset 0 0 0 2px #ffd36a"></b>Held in Redis</span><span><b style="background:#ffffff1f"></b>Free</span></div>
+  </section>
+  <footer>
+    <div class="stat"><p class="label">THROUGHPUT</p><p class="big">~35k req/s</p></div>
+    <div class="stat"><p class="label">PURCHASES</p><p class="big">~700 /s</p></div>
+    <div class="stat"><p class="label">CONCURRENT</p><p class="big">50,000</p></div>
+    <div class="stat"><p class="label">OVERSOLD</p><p class="big">0 seats</p></div>
+  </footer>
+  <script>
+    let s = 7; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    document.getElementById('dots').innerHTML = Array.from({ length: 84 }, (_, i) => `<i class="${i < 30 ? 'in' : ''}"></i>`).join('');
+    document.getElementById('seats').innerHTML = Array.from({ length: 24 * 12 }, (_, i) => {
+      const row = Math.floor(i / 24), x = r();
+      const sold = x < 0.78 - row * 0.045, held = !sold && x < 0.9 - row * 0.03;
+      return `<i class="${sold ? 'sold' : held ? 'held' : ''}"></i>`;
+    }).join('');
+  </script>
+</body>
+</html>

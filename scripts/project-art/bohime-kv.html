@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- Monitor art for Bohime KV, rendered to public/projects/*.webp by scripts/render-projects.mjs. -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'Inter Tight'; font-weight: 800; src: url(../../node_modules/@fontsource/inter-tight/files/inter-tight-latin-800-normal.woff2); }
+  @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: url(../../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-600-normal.woff2); }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1280px; height: 800px; overflow: hidden; color: #eef0ff; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    background: radial-gradient(110% 90% at 80% 0%, #24135a 0%, #0c0a24 55%, #070614 100%); padding: 56px 64px; display: grid;
+    grid-template: auto 1fr / 470px 1fr; gap: 34px 46px; }
+  header { grid-column: 1 / -1; display: flex; align-items: end; justify-content: space-between; }
+  .kick { font-size: 18px; letter-spacing: .18em; color: #8fa2ff; }
+  h1 { font: 800 72px/1 'Inter Tight', sans-serif; letter-spacing: -0.035em; margin-top: 14px; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, #8a7bff, #2af0ff); -webkit-background-clip: text; color: transparent; }
+  .chips { display: flex; gap: 10px; }
+  .chips span { font-size: 16px; padding: 10px 14px; border-radius: 999px; border: 1.5px solid #8a7bff66; color: #c9c2ff; }
+  .term { border-radius: 18px; background: #05040e; border: 1.5px solid #ffffff1f; overflow: hidden; display: flex; flex-direction: column; }
+  .bar { display: flex; gap: 9px; padding: 16px 18px; border-bottom: 1.5px solid #ffffff14; }
+  .bar i { width: 13px; height: 13px; border-radius: 50%; background: #ffffff2a; }
+  .bar i:nth-child(1) { background: #ff5f57; } .bar i:nth-child(2) { background: #febc2e; } .bar i:nth-child(3) { background: #28c840; }
+  pre { font: 600 21px/1.75 'JetBrains Mono', monospace; padding: 22px 24px; color: #d9dcff; }
+  .p { color: #2af0ff; } .ok { color: #6affc8; } .dim { color: #7c7fae; }
+  .cluster { display: grid; grid-template-rows: auto 1fr auto; gap: 18px; }
+  .client { justify-self: center; font-size: 17px; padding: 12px 20px; border-radius: 12px; border: 1.5px dashed #2af0ff99; color: #9ff7ff; }
+  .shards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .shard { border-radius: 18px; border: 1.5px solid #8a7bff55; background: #8a7bff12; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .shard p { font-size: 15px; letter-spacing: .14em; color: #a99fff; text-align: center; }
+  .node { border-radius: 12px; padding: 14px 12px; background: #ffffff0d; border: 1.5px solid #ffffff1c; font-size: 17px; display: flex; justify-content: space-between; align-items: center; }
+  .node.lead { background: linear-gradient(135deg, #6b5cff, #2a9dff); border-color: transparent; box-shadow: 0 0 26px #6b5cff88; color: #fff; }
+  .node small { font-size: 12px; letter-spacing: .12em; opacity: .85; }
+  .notes { display: flex; justify-content: space-between; font-size: 16px; color: #9ea2d8; }
+  .notes b { color: #eef0ff; font-weight: 600; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="kick">KEY-VALUE STORE · ~830 LINES OF RUST</p>
+      <h1>Bohime <em>KV</em></h1>
+    </div>
+    <div class="chips"><span>Rust</span><span>Raft</span><span>gRPC</span><span>Tokio</span></div>
+  </header>
+  <div class="term">
+    <div class="bar"><i></i><i></i><i></i></div>
+<pre><span class="p">$</span> bohime put color blue
+<span class="ok">OK</span>
+<span class="p">$</span> bohime get color
+blue
+<span class="p">$</span> bohime del color
+<span class="ok">OK</span>
+<span class="p">$</span> bohime get color
+<span class="dim">(not found)</span></pre>
+  </div>
+  <section class="cluster">
+    <div class="client">client → any node → redirect → shard leader</div>
+    <div class="shards" id="shards"></div>
+    <div class="notes"><span><b>fnv1a(key) % 3</b> picks the shard</span><span>fsync per batch, then ack</span></div>
+  </section>
+  <script>
+    document.getElementById('shards').innerHTML = [0, 1, 2].map((s) => `<div class="shard"><p>SHARD ${s} · RAFT</p>${[1, 2, 3].map((n) => {
+      const id = s * 3 + n, lead = n === [2, 1, 3][s];
+      return `<div class="node ${lead ? 'lead' : ''}"><span>node ${id}</span><small>${lead ? 'LEADER' : 'FOLLOWER'}</small></div>`;
+    }).join('')}</div>`).join('');
+  </script>
+</body>
+</html>

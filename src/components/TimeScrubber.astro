@@ -1,0 +1,16 @@
+---
+import { SECTIONS } from '../config';
+---
+<nav class="scrubber" aria-label="Time of day">
+  <div class="track">
+    <span class="rail" aria-hidden="true"></span>
+    <ol>
+      {SECTIONS.map((s, i) => (
+        <li><a href={`#${s.id}`} data-index={i} aria-current={i === 0 ? 'true' : undefined}>
+          <span class="tag"><span class="t">{s.time}</span> <span class="l">{s.label}</span></span><span class="dot" aria-hidden="true"></span>
+        </a></li>
+      ))}
+    </ol>
+    <span class="orb" aria-hidden="true"></span>
+  </div>
+</nav>

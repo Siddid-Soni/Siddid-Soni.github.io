@@ -1,0 +1,34 @@
+---
+interface Props {
+  projects: { slug: string; title: string; summary: string; stack: string[]; screenshot?: string; video?: string; accent: [string, string] }[];
+  books: readonly { name: string; color: string; ink: string; icon?: string }[];
+}
+const { projects, books } = Astro.props;
+---
+<div id="room" class="room" aria-hidden="true" data-projects={JSON.stringify(projects)} data-books={JSON.stringify(books)}>
+  <div class="stills">
+    {[0, 1, 2, 3, 4, 5].map((i) => <img class="still" src={`/fallback/${i}.webp`} alt="" data-index={i} loading="lazy" decoding="async" />)}
+  </div>
+</div>
+<script>
+  import { initPage } from '../scripts/page';
+  initPage();
+  const host = document.getElementById('room')!;
+  const q = new URLSearchParams(location.search).get('still');
+  const still = q != null && /^[0-5]$/.test(q) ? Number(q) : undefined;
+  if (still != null) document.documentElement.classList.add('still-mode');
+  const boot = () => {
+    import('../scene/main')
+      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]'), books: JSON.parse(host.dataset.books ?? '[]'), still }))
+      .catch(() => host.classList.add('fallback'));
+  };
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(boot, { timeout: 1500 }) : setTimeout(boot, 200));
+  if (document.readyState === 'complete') requestAnimationFrame(idle);
+  else addEventListener('load', () => requestAnimationFrame(idle), { once: true });
+</script>
+<style>
+  .room :global(canvas) { width: 100%; height: 100%; display: block; transition: opacity .4s; }
+  @media (prefers-reduced-motion: reduce) { .room :global(canvas) { transition: none; } }
+  .room.cut :global(canvas) { animation: cut 300ms ease-out; }
+  @keyframes cut { from { opacity: 0; } to { opacity: 1; } }
+</style>

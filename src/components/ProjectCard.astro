@@ -1,0 +1,13 @@
+---
+interface Props { slug: string; title: string; summary: string; stack: string[]; accent: [string, string]; index: number }
+const { slug, title, summary, stack, accent, index } = Astro.props;
+---
+<a class="card" href={`/projects/${slug}/`} data-project={slug} style={`--a1: ${accent[0]}; --a2: ${accent[1]}`}>
+  <span class="card-n" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+  <span class="card-body">
+    <h3>{title}</h3>
+    <p>{summary}</p>
+    <ul class="stack" aria-label="Stack">{stack.map((s) => <li>{s}</li>)}</ul>
+  </span>
+  <span class="card-go" aria-hidden="true">→</span>
+</a>

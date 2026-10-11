@@ -1,0 +1,150 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { SITE } from '../../config';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  return projects.map((p, i) => ({ params: { slug: p.id }, props: { p, n: i + 1, next: projects[(i + 1) % projects.length] } }));
+}
+const { p, n, next } = Astro.props;
+const { Content } = await render(p);
+const { title, summary, stack, screenshot, video, links, accent } = p.data;
+const pad = (k: number) => String(k).padStart(2, '0');
+// The browser frame's address bar shows where the thing lives: the live site, else the repo.
+const where = (links.live ?? links.repo ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+---
+<Base title={`${title} · ${SITE.name}`} description={summary}>
+  <div class="case" style={`--a1: ${accent[0]}; --a2: ${accent[1]}`}>
+    <header class="case-bar">
+      <a class="case-back" href="/#projects"><span aria-hidden="true">←</span> Back to all work</a>
+      <a class="case-name" href="/">{SITE.name}</a>
+    </header>
+
+    <main id="main">
+      <section class="case-hero">
+        <p class="kicker">Case study · {pad(n)}</p>
+        <h1>{title}</h1>
+        <p class="case-lead">{summary}</p>
+        <dl class="case-meta">
+          <div><dt>Stack</dt><dd><ul class="case-stack">{stack.map((s) => <li>{s}</li>)}</ul></dd></div>
+          {(links.live || links.repo) && (
+            <div><dt>Links</dt><dd class="case-links">
+              {links.live && <a class="btn btn--primary" href={links.live}>Visit the site <span aria-hidden="true">↗</span></a>}
+              {links.repo && <a class="btn" href={links.repo}>Source on GitHub <span aria-hidden="true">↗</span></a>}
+            </dd></div>
+          )}
+        </dl>
+      </section>
+
+      {(video || screenshot) && (
+        <figure class="case-shot">
+          <div class="frame">
+            <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>{where}</span></div>
+            {video ? (
+              <video src={video} poster={screenshot} width="1280" height="800" autoplay muted loop playsinline preload="metadata" aria-label={`Recording of ${title}`}></video>
+            ) : <img src={screenshot} alt={`Screenshot of ${title}`} width="1280" height="800" />}
+          </div>
+        </figure>
+      )}
+
+      <article class="case-body"><Content /></article>
+
+      <nav class="case-next" aria-label="Next project">
+        <a href={`/projects/${next.id}/`} style={`--n1: ${next.data.accent[0]}; --n2: ${next.data.accent[1]}`}>
+          <span class="case-next-k">Next project</span>
+          <span class="case-next-t">{next.data.title} <span aria-hidden="true">→</span></span>
+          <span class="case-next-s">{next.data.summary}</span>
+        </a>
+      </nav>
+    </main>
+  </div>
+  <script>
+    // No autoplaying motion for reduced-motion visitors: stop the recording and offer controls instead.
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('video[autoplay]').forEach((v) => { (v as HTMLVideoElement).pause(); (v as HTMLVideoElement).controls = true; });
+    }
+  </script>
+</Base>
+
+<style>
+  .case { --wrap: min(1120px, 100% - 48px); position: relative; overflow-x: clip; }
+  /* A soft wash of the project's colours behind the top of the page. */
+  .case::before {
+    content: ''; position: absolute; inset: -20vh -10vw auto; height: 90vh; z-index: -1; pointer-events: none;
+    background: radial-gradient(40% 50% at 78% 40%, color-mix(in srgb, var(--a2) 28%, transparent), transparent 70%),
+      radial-gradient(35% 45% at 15% 20%, color-mix(in srgb, var(--a1) 20%, transparent), transparent 70%);
+  }
+
+  .case main { padding: 0; } /* the home page pads main to clear the room card; there's none here */
+  .case-bar { width: var(--wrap); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .case-back { font: 600 13px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; text-decoration: none;
+    padding: 10px 14px; border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass); }
+  .case-back:hover { border-color: var(--fg); }
+  .case-name { font: 800 18px/1 var(--font-head); letter-spacing: -0.02em; text-decoration: none; }
+
+  .case-hero { width: var(--wrap); margin: 0 auto; padding: 8vh 0 48px; }
+  .case-hero h1 { font-size: clamp(44px, 7.5vw, 104px); letter-spacing: -0.045em; line-height: .95; max-width: 14ch; margin: 0 0 .3em; }
+  .case-lead { font-size: clamp(19px, 1.8vw, 24px); line-height: 1.45; max-width: 36ch; margin: 0 0 40px; }
+  .case-meta { display: flex; flex-wrap: wrap; gap: 24px 64px; margin: 0; padding-top: 24px; border-top: 1px solid var(--glass-border); }
+  .case-meta dt { font: 600 12px/1 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .case-meta dd { margin: 0; }
+  .case-stack { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  .case-stack li { font: 600 12px/1 var(--font-mono); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass); }
+  .case-links { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* The recording or screenshot in a browser window, wider than the text. */
+  .case-shot { width: min(960px, 100% - 32px); margin: 0 auto 88px; }
+  .frame { border-radius: 16px; overflow: hidden; background: #15110d; border: 1px solid rgb(0 0 0 / 0.25);
+    box-shadow: 0 2px 0 rgb(255 255 255 / 0.4) inset, 0 50px 90px -40px color-mix(in srgb, var(--a1) 60%, #000), 0 20px 40px -24px rgb(0 0 0 / 0.45); }
+  .frame-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; background: #221c17; }
+  .frame-bar i { width: 11px; height: 11px; border-radius: 50%; background: #4a4038; }
+  .frame-bar i:nth-child(1) { background: #ff5f57; } .frame-bar i:nth-child(2) { background: #febc2e; } .frame-bar i:nth-child(3) { background: #28c840; }
+  .frame-bar span { flex: 1; margin: 0 8% 0 16px; padding: 5px 12px; border-radius: 7px; background: #15110d; color: #cbbfae;
+    font: 600 12px/1.2 var(--font-mono); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .frame video, .frame img { display: block; width: 100%; height: auto; }
+
+  /* Write-up: each heading sits in a left column beside its text, with a hairline between sections. */
+  .case-body { width: min(1000px, 100% - 48px); margin: 0 auto; display: grid; grid-template-columns: 240px minmax(0, 1fr); column-gap: 56px; }
+  .case-body :global(h2) { grid-column: 1; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; margin: 0; padding: 28px 0 32px; border-top: 1px solid var(--glass-border); }
+  .case-body :global(h2::before) { content: ''; display: block; width: 28px; height: 4px; border-radius: 2px; margin-bottom: 14px; background: linear-gradient(90deg, var(--a1), var(--a2)); }
+  .case-body :global(> :not(h2)) { grid-column: 2; max-width: 62ch; margin: 0 0 1em; font-size: 17.5px; line-height: 1.7; }
+  .case-body :global(h2 + *) { border-top: 1px solid var(--glass-border); padding-top: 28px; }
+  .case-body :global(:is(ul, ol)) { padding-left: 0; list-style: none; }
+  .case-body :global(:is(ul, ol) li) { position: relative; padding-left: 26px; margin-bottom: .6em; }
+  .case-body :global(ul li::before) { content: ''; position: absolute; left: 2px; top: .7em; width: 10px; height: 2px; border-radius: 1px; background: var(--a1); }
+  .case-body :global(ol) { counter-reset: step; }
+  .case-body :global(ol li::before) { counter-increment: step; content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: .25em;
+    font: 600 11px/1.6 var(--font-mono); color: var(--a1); }
+  .case-body :global(ol li) { padding-left: 34px; }
+  .case-body :global(code) { font: 600 .86em var(--font-mono); padding: 2px 6px; border-radius: 5px; background: var(--glass); border: 1px solid var(--glass-border); }
+
+  .case-next { width: min(1000px, 100% - 48px); margin: 96px auto 64px; }
+  .case-next a { position: relative; display: grid; gap: 8px; padding: 32px 36px; border-radius: 20px; text-decoration: none; overflow: hidden;
+    background: var(--glass); border: 1px solid var(--glass-border); transition: transform .25s, box-shadow .25s; }
+  .case-next a::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: linear-gradient(var(--n1), var(--n2)); }
+  .case-next a:hover { transform: translateY(-3px); box-shadow: 0 24px 50px -30px rgb(0 0 0 / 0.5); }
+  .case-next-k { font: 600 12px/1 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .case-next-t { font: 800 clamp(26px, 3.4vw, 40px)/1.1 var(--font-head); letter-spacing: -0.03em; }
+  .case-next-s { color: var(--muted); max-width: 60ch; }
+  @media (prefers-reduced-motion: reduce) { .case-next a { transition: none; } }
+
+  @media (max-width: 759px) {
+    .case { --wrap: calc(100% - 32px); }
+    .case-bar { padding: 14px 0; }
+    .case-name { display: none; }
+    .case-hero { padding: 32px 0 36px; }
+    .case-meta { gap: 22px; }
+    .case-shot { width: calc(100% - 20px); margin-bottom: 48px; }
+    .frame { border-radius: 12px; }
+    .frame-bar { padding: 8px 10px; gap: 5px; }
+    .frame-bar i { width: 8px; height: 8px; }
+    .frame-bar span { font-size: 10.5px; margin: 0 0 0 10px; }
+    .case-body { width: calc(100% - 32px); grid-template-columns: 1fr; }
+    .case-body :global(h2) { grid-column: 1; padding: 28px 0 12px; }
+    .case-body :global(> :not(h2)) { grid-column: 1; font-size: 16.5px; }
+    .case-body :global(h2 + *) { border-top: 0; padding-top: 0; }
+    .case-next { width: calc(100% - 32px); margin: 64px auto 40px; }
+    .case-next a { padding: 24px 22px 24px 26px; }
+  }
+</style>
