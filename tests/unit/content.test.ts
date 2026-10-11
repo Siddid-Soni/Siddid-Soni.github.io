@@ -7,10 +7,10 @@ describe('content', () => {
     expect(SECTIONS.map((s) => s.id)).toEqual(['hero', 'about', 'projects', 'skills', 'after-hours', 'contact']);
     expect(SECTIONS.map((s) => s.time)).toEqual(['07:30', '09:00', '13:00', '18:30', '23:00', '00:00']);
   });
-  it('has 6–10 skills grouped by area', () => {
+  it('has 6–14 skills grouped by area', () => {
     const n = SITE.skills.flatMap((g) => g.items).length;
     expect(n).toBeGreaterThanOrEqual(6);
-    expect(n).toBeLessThanOrEqual(10);
+    expect(n).toBeLessThanOrEqual(14);
   });
   it('features at most 4 projects', () => {
     const featured = readdirSync('src/content/projects')

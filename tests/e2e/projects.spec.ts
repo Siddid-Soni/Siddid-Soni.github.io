@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-for (const slug of ['realtime-chat', 'ai-notes', 'dev-dashboard', 'cli-toolkit']) {
+for (const slug of ['monsoon-coffee', 'high-throughput-ticketing', 'bohime-kv', 'omarchy-armoury']) {
   test(`project page ${slug} renders`, async ({ page }) => {
     const res = await page.goto(`/projects/${slug}/`);
     expect(res?.status()).toBe(200);
@@ -12,6 +12,6 @@ for (const slug of ['realtime-chat', 'ai-notes', 'dev-dashboard', 'cli-toolkit']
 }
 
 test('project page passes axe', async ({ page }) => {
-  await page.goto('/projects/realtime-chat/');
+  await page.goto('/projects/monsoon-coffee/');
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

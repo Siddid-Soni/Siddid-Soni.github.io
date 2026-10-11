@@ -25,6 +25,8 @@ export function applyLighting(scene: THREE.Scene, lights: Lights, room: Room, l:
   lights.hemi.intensity = l.hemiIntensity;
   lights.sun.color.set(l.sunColor);
   lights.sun.intensity = l.sunIntensity;
+  lights.sun.position.set(...l.sun);
+  room.setBeam(l.beam);
   room.setNeon(Math.min(1, l.night * (1 + shimmer * 0.06)));
   room.lamp.intensity = l.lamp;
   room.bulb.material.color.set(l.lamp > 0.3 ? '#ffd9a0' : '#bbbbbb');

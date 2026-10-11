@@ -19,6 +19,24 @@ describe('buildRoom + applyLighting', () => {
     neonLights.forEach((l) => expect((l as THREE.PointLight).intensity).toBe(0));
   });
 
+  it('titles a book per language and slides the focused one out', async () => {
+    const { buildRoom } = await import('../../src/scene/room');
+    const books = [{ name: 'Rust', color: '#b7410e', ink: '#ffffff' }, { name: 'Lua', color: '#1f2a6b', ink: '#ffffff' }];
+    const room = buildRoom({ books });
+    const titled = room.shelf.children.filter((o) => o.userData.book) as THREE.Mesh[];
+    expect(titled).toHaveLength(2);
+    const x0 = titled.map((m) => m.position.x);
+    room.focusBook('Rust');
+    expect(room.tickBooks(1 / 60)).toBe(true);
+    for (let i = 0; i < 200 && room.tickBooks(1 / 60); i++);
+    expect(room.tickBooks(1 / 60)).toBe(false);
+    expect(titled[0].position.x).toBeGreaterThan(x0[0]);
+    expect(titled[1].position.x).toBe(x0[1]);
+    room.focusBook(null);
+    for (let i = 0; i < 200 && room.tickBooks(1 / 60); i++);
+    expect(titled[0].position.x).toBeCloseTo(x0[0]);
+  });
+
   it('applies a lighting preset to scene, lights and room', async () => {
     const { buildRoom } = await import('../../src/scene/room');
     const { createLights, applyLighting } = await import('../../src/scene/lighting');

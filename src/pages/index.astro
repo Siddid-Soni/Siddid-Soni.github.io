@@ -15,50 +15,75 @@ const [hero, about, projects, skills, after, contact] = SECTIONS;
 ---
 <Base>
   <header class="chrome">
-    <a class="logo" href="#hero">{SITE.name}</a>
+    <a class="logo" href="#hero"><span class="logo-mark" aria-hidden="true"></span>{SITE.name}</a>
     <nav class="nav" aria-label="Main">
       <a href="#projects">Work</a><a href="#about">About</a><a href="#contact">Contact</a>
       <a href={SITE.resume}>Résumé ↗</a>
     </nav>
+    <TimeScrubber />
     <Clock />
   </header>
-  <RoomCanvas projects={featured.map((p) => ({ slug: p.id, title: p.data.title, summary: p.data.summary, stack: p.data.stack, screenshot: p.data.screenshot, accent: p.data.accent }))} />
-  <TimeScrubber />
+  <RoomCanvas books={SITE.languages} projects={featured.map((p) => ({ slug: p.id, title: p.data.title, summary: p.data.summary, stack: p.data.stack, screenshot: p.data.screenshot, video: p.data.video, accent: p.data.accent }))} />
+  <div class="scrim" aria-hidden="true"><span class="scrim-l"></span><span class="scrim-r"></span><span class="scrim-c"></span></div>
   <main id="main">
     <Section def={hero} index={0}>
       <p class="lead">{SITE.role}. {SITE.tagline}</p>
-      <a class="cue" href="#about">Scroll to start the day ↓</a>
+      <div class="actions">
+        <a class="btn btn--primary" href="#projects">See my work <span aria-hidden="true">→</span></a>
+        <a class="btn" href={SITE.resume}>Résumé <span aria-hidden="true">↗</span></a>
+      </div>
+      <a class="cue" href="#about"><span class="cue-line" aria-hidden="true"></span>Scroll to start the day</a>
     </Section>
     <Section def={about} index={1}>
-      <p>{SITE.about}</p>
-      <p class="muted">{SITE.location}</p>
+      <p class="lead">{SITE.about}</p>
+      <p class="status"><span class="pulse" aria-hidden="true"></span>{SITE.location}</p>
     </Section>
     <Section def={projects} index={2}>
-      <div class="cards">
-        {featured.map((p) => <ProjectCard slug={p.id} title={p.data.title} summary={p.data.summary} stack={p.data.stack} />)}
+      <div class="cards deck">
+        {featured.map((p, i) => <ProjectCard slug={p.id} title={p.data.title} summary={p.data.summary} stack={p.data.stack} accent={p.data.accent} index={i} />)}
       </div>
+      <div class="pager" aria-hidden="true">{featured.map(() => <i />)}</div>
+      <a class="more" href={SITE.github}>More on GitHub <span aria-hidden="true">↗</span></a>
     </Section>
     <Section def={skills} index={3}>
-      <div class="skills">
+      <dl class="rows skills deck" tabindex="0">
+        <div class="row"><dt>Languages</dt><dd><ul class="tags">
+          {SITE.languages.map((l) => (
+            <li class="lang" data-book={l.name} style={`--spine: ${l.color}; --ink: ${l.ink}`}>
+              <svg class="lang-logo" viewBox="0 0 24 24" aria-hidden="true"><path d={l.icon} /></svg>{l.name}
+            </li>
+          ))}
+        </ul></dd></div>
         {SITE.skills.map((g) => (
-          <div><h3>{g.area}</h3><ul class="tags">{g.items.map((s) => <li>{s}</li>)}</ul></div>
+          <div class="row"><dt>{g.area}</dt><dd><ul class="tags">{g.items.map((s) => <li>{s}</li>)}</ul></dd></div>
         ))}
-      </div>
+      </dl>
+      <div class="pager" aria-hidden="true">{[0, ...SITE.skills].map(() => <i />)}</div>
     </Section>
     <Section def={after} index={4}>
-      <ul class="after">
+      <ul class="rows after deck">
         {SITE.afterHours.map((a) => (
-          <li><strong>{a.href ? <a href={a.href}>{a.title}</a> : a.title}</strong> · {a.text}</li>
+          <li class="row"><strong>{a.href ? <a href={a.href}>{a.title} <span aria-hidden="true">↗</span></a> : a.title}</strong><span>{a.text}</span></li>
         ))}
       </ul>
+      <div class="pager" aria-hidden="true">{SITE.afterHours.map(() => <i />)}</div>
     </Section>
     <Section def={contact} index={5}>
-      <ul class="contact">
-        <li><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
-        <li><a href={SITE.github}>GitHub</a></li>
-        <li><a href={SITE.linkedin}>LinkedIn</a></li>
-        <li><a href={SITE.resume}>Résumé (PDF)</a></li>
+      <div class="cta">
+        <a class="btn btn--primary btn--lg" href={`mailto:${SITE.email}`}>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg>{SITE.email}
+        </a>
+        <button class="btn btn--icon copy" type="button" data-copy={SITE.email} aria-label="Copy email address" hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5" /><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" /></svg>
+        </button>
+        <span class="sr" role="status" id="copy-status"></span>
+      </div>
+      <ul class="contact-links">
+        <li><a class="btn" href={SITE.github}>GitHub <span aria-hidden="true">↗</span></a></li>
+        <li><a class="btn" href={SITE.linkedin}>LinkedIn <span aria-hidden="true">↗</span></a></li>
+        <li><a class="btn" href={SITE.resume}>Résumé <span aria-hidden="true">↓</span></a></li>
       </ul>
+      <p class="foot">© {new Date().getFullYear()} {SITE.name} · Built with Astro and Three.js</p>
     </Section>
   </main>
 </Base>

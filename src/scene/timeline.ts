@@ -3,6 +3,8 @@ import { KEYFRAMES, type Keyframe, type Lighting, type Vec3 } from './keyframes'
 export interface TimelineState {
   position: Vec3; lookAt: Vec3; viewOffset: number; lighting: Lighting;
   clockMinutes: number; theme: 'day' | 'night'; index: number;
+  /** Phone-only framing (see Keyframe.phone), interpolated. */
+  phoneShift: number; phoneZoom: number;
 }
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
@@ -21,7 +23,8 @@ function lerpLighting(a: Lighting, b: Lighting, t: number): Lighting {
     background: lerpHex(a.background, b.background, t), sky: lerpHex(a.sky, b.sky, t),
     hemiSky: lerpHex(a.hemiSky, b.hemiSky, t), hemiGround: lerpHex(a.hemiGround, b.hemiGround, t),
     hemiIntensity: lerp(a.hemiIntensity, b.hemiIntensity, t), sunColor: lerpHex(a.sunColor, b.sunColor, t),
-    sunIntensity: lerp(a.sunIntensity, b.sunIntensity, t), lamp: lerp(a.lamp, b.lamp, t), night: lerp(a.night, b.night, t),
+    sunIntensity: lerp(a.sunIntensity, b.sunIntensity, t), lamp: lerp(a.lamp, b.lamp, t), night: lerp(a.night, b.night, t), beam: lerp(a.beam, b.beam, t),
+    sun: lerp3(a.sun, b.sun, t),
   };
 }
 
@@ -36,6 +39,8 @@ export function sampleTimeline(f: number, kfs: Keyframe[] = KEYFRAMES, opts: { r
     position: lerp3(A.position, B.position, t),
     lookAt: lerp3(A.lookAt, B.lookAt, t),
     viewOffset: lerp(A.viewOffset, B.viewOffset, t),
+    phoneShift: lerp(A.phone?.shift ?? 0, B.phone?.shift ?? 0, t),
+    phoneZoom: lerp(A.phone?.zoom ?? 1, B.phone?.zoom ?? 1, t),
     lighting: lerpLighting(A.lighting, B.lighting, t),
     clockMinutes: Math.round(lerp(A.minutes, B.minutes, t)) % 1440,
     theme: x > 2.5 ? 'night' : 'day',
@@ -46,7 +51,11 @@ export function sampleTimeline(f: number, kfs: Keyframe[] = KEYFRAMES, opts: { r
 export const damp = (current: number, target: number, dt: number, rate = 8) =>
   current + (target - current) * (1 - Math.exp(-rate * dt));
 
-export function progressFromSections(scrollY: number, tops: number[], maxScroll: number): number {
+/**
+ * Scroll position → timeline progress. Between two section tops the scene normally moves the whole way; with `ramp`
+ * (px), it holds each section's shot and only moves over the last `ramp` px before the next section arrives.
+ */
+export function progressFromSections(scrollY: number, tops: number[], maxScroll: number, ramp = Infinity): number {
   const n = tops.length - 1;
   if (maxScroll <= 0 || scrollY <= 0) return 0;
   if (scrollY >= maxScroll) return n;
@@ -55,7 +64,8 @@ export function progressFromSections(scrollY: number, tops: number[], maxScroll:
   for (let i = n - 1; i >= 0; i--) {
     if (scrollY >= eff[i]) {
       const span = eff[i + 1] - eff[i];
-      return span > 0 ? i + Math.min(1, (scrollY - eff[i]) / span) : i + 1;
+      const run = Math.min(span, ramp);
+      return run > 0 ? i + Math.min(1, Math.max(0, 1 - (eff[i + 1] - scrollY) / run)) : i + 1;
     }
   }
   return 0;
@@ -67,8 +77,8 @@ export function formatClock(minutes: number): string {
   return `${icon} ${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
-export function frameOffset(viewOffset: number, width: number, height: number) {
-  if (width < 760) return { x: -viewOffset * 0.3 * width, y: 0.22 * height };
+export function frameOffset(viewOffset: number, width: number, height: number, phoneShift = 0) {
+  if (width < 760) return { x: 0, y: phoneShift * height }; // phones: the room is its own card, subject centred in it
   if (width < 1024) return { x: -viewOffset * 0.6 * width, y: 0 };
   return { x: -viewOffset * width, y: 0 };
 }

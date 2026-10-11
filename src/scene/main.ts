@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { buildRoom } from './room';
+import { buildRoom, type Book } from './room';
 import { createLights, applyLighting } from './lighting';
 import { createFrameSampler, damp, frameOffset, sampleTimeline } from './timeline';
 import { createMonitor, type MonitorProject } from './monitor';
 
-export interface StartOptions { projects: MonitorProject[]; still?: number }
+export interface StartOptions { projects: MonitorProject[]; books?: Book[]; still?: number }
 
 const yieldToMain = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -30,7 +30,7 @@ async function warmUp(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera:
   const groups = new Map<string, THREE.Mesh>();
   for (const m of meshes) {
     const mat = m.material as THREE.MeshStandardMaterial;
-    const key = [mat.type, mat.flatShading, !!mat.map, mat.transparent, m.castShadow].join('|');
+    const key = [mat.type, mat.flatShading, !!mat.map, mat.transparent, m.castShadow, !!(m as THREE.InstancedMesh).isInstancedMesh].join('|');
     if (!groups.has(key)) groups.set(key, m);
   }
   const gl = renderer.getContext();
@@ -57,21 +57,28 @@ export async function start(host: HTMLElement, opts: StartOptions) {
   if (!renderer.getContext()) throw new Error('WebGL unavailable');
   renderer.setPixelRatio(Math.min(devicePixelRatio, narrow ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // three r18x dropped PCFSoft and falls back to this anyway
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1;
   const canvas = renderer.domElement;
   await yieldToMain();
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 200);
   const lights = createLights(scene, narrow ? 1024 : 2048);
-  const room = buildRoom({ neonScale: 0.3 });
+  await document.fonts?.load('800 40px "Inter Tight"').catch(() => {}); // the book spines are lettered in it
+  const room = buildRoom({ neonScale: 0.3, books: opts.books });
   scene.add(room.group);
   await yieldToMain();
-  const monitor = createMonitor(opts.projects, { cycle: !reduced });
+  // Website recordings play on the monitor, except with reduced motion or when saving data.
+  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+  const monitor = createMonitor(opts.projects, { cycle: !reduced, animate: !reduced, video: !reduced && !saveData });
   room.screen.material.map = monitor.texture;
   room.screen.material.needsUpdate = true;
   const onFocus = (e: Event) => { monitor.focus((e as CustomEvent<{ slug: string | null }>).detail.slug); dirty = true; };
   addEventListener('portfolio:project-focus', onFocus);
+  const onSkill = (e: Event) => { room.focusBook((e as CustomEvent<{ name: string | null }>).detail.name); dirty = true; };
+  addEventListener('portfolio:skill-focus', onSkill);
 
   let target = opts.still ?? 0;
   let current = target;
@@ -85,6 +92,7 @@ export async function start(host: HTMLElement, opts: StartOptions) {
     w = host.clientWidth; h = host.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    camera.fov = innerWidth < 760 ? 44 : 35; // phones: the room is a small card, a slightly wider lens fits each subject
     dirty = true;
   };
   resize();
@@ -102,9 +110,12 @@ export async function start(host: HTMLElement, opts: StartOptions) {
     last = now;
     current = reduced ? target : damp(current, target, dt);
     smoothMouse = { x: damp(smoothMouse.x, mouse.x, dt), y: damp(smoothMouse.y, mouse.y, dt) };
-    const settling = Math.abs(current - target) > 1e-4 || Math.abs(smoothMouse.x - mouse.x) + Math.abs(smoothMouse.y - mouse.y) > 1e-3;
+    const booksMoving = room.tickBooks(reduced ? 1 : dt);
+    const settling = booksMoving || Math.abs(current - target) > 1e-4 || Math.abs(smoothMouse.x - mouse.x) + Math.abs(smoothMouse.y - mouse.y) > 1e-3;
     const s = sampleTimeline(current, undefined, { reducedMotion: reduced });
     const idle = !reduced && s.lighting.night > 0.5 && now - lastIdle > 1000 / 30;
+    monitor.setActive(current > 0.6 && current < 2.75); // around the desk shots, where the screen is big
+    monitor.setGame(current > 3.4); // after hours: one more game
     const monitorChanged = monitor.tick(now);
     if (!dirty && !settling && !idle && !monitorChanged) { host.dataset.settled = 'true'; return; }
     if (idle) lastIdle = now;
@@ -118,10 +129,15 @@ export async function start(host: HTMLElement, opts: StartOptions) {
 
     camera.position.set(s.position[0] + smoothMouse.x * 0.25, s.position[1] + smoothMouse.y * 0.15, s.position[2]);
     camera.lookAt(s.lookAt[0], s.lookAt[1], s.lookAt[2]);
-    const o = frameOffset(s.viewOffset, w, h);
+    const o = frameOffset(s.viewOffset, w, h, s.phoneShift);
+    camera.zoom = w < 760 ? s.phoneZoom : 1;
     camera.setViewOffset(w, h, o.x, o.y, w, h);
     camera.updateProjectionMatrix();
     applyLighting(scene, lights, room, s.lighting, idle ? Math.sin(now / 180) * 0.5 + 0.5 : 0);
+    room.setSteam(Math.min(1, Math.max(0, 1.8 - current)));
+    room.setKeyboard(s.lighting.night);
+    room.setSynth(s.lighting.night, reduced ? 0 : now);
+    room.setSouls(Math.min(1, Math.max(0, (current - 3.4) / 0.4)), reduced ? 0 : now);
     renderer.render(scene, camera);
     if (opts.still != null) {
       if (++stillFrames === 2) host.dataset.stillReady = 'true';
@@ -165,7 +181,7 @@ export async function start(host: HTMLElement, opts: StartOptions) {
   });
 
   const onVisibility = () => {
-    if (document.hidden) cancelAnimationFrame(raf);
+    if (document.hidden) { cancelAnimationFrame(raf); monitor.setActive(false); }
     else if (!lost) { last = performance.now(); dirty = true; raf = requestAnimationFrame(frame); }
   };
   document.addEventListener('visibilitychange', onVisibility);
@@ -177,6 +193,8 @@ export async function start(host: HTMLElement, opts: StartOptions) {
       cancelAnimationFrame(raf);
       removeEventListener('portfolio:progress', onProgress);
       removeEventListener('portfolio:project-focus', onFocus);
+      removeEventListener('portfolio:skill-focus', onSkill);
+      monitor.setActive(false);
       removeEventListener('resize', resize);
       removeEventListener('pointermove', onPointer);
       document.removeEventListener('visibilitychange', onVisibility);

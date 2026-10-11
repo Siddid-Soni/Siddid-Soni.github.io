@@ -11,6 +11,7 @@ const projects = defineCollection({
     summary: z.string(),
     stack: z.array(z.string()).min(1),
     screenshot: z.string().optional(),
+    video: z.string().optional(), // a looping recording of a website project, shown on the 3D monitor
     accent: z.tuple([hex, hex]).default(['#6b5cff', '#ff6ad5']),
     links: z.object({ live: z.string().url().optional(), repo: z.string().url().optional() }).default({}),
     featured: z.boolean().default(false),

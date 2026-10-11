@@ -1,8 +1,11 @@
 ---
-interface Props { projects: { slug: string; title: string; summary: string; stack: string[]; screenshot?: string; accent: [string, string] }[] }
-const { projects } = Astro.props;
+interface Props {
+  projects: { slug: string; title: string; summary: string; stack: string[]; screenshot?: string; video?: string; accent: [string, string] }[];
+  books: readonly { name: string; color: string; ink: string; icon?: string }[];
+}
+const { projects, books } = Astro.props;
 ---
-<div id="room" class="room" aria-hidden="true" data-projects={JSON.stringify(projects)}>
+<div id="room" class="room" aria-hidden="true" data-projects={JSON.stringify(projects)} data-books={JSON.stringify(books)}>
   <div class="stills">
     {[0, 1, 2, 3, 4, 5].map((i) => <img class="still" src={`/fallback/${i}.webp`} alt="" data-index={i} loading="lazy" decoding="async" />)}
   </div>
@@ -16,7 +19,7 @@ const { projects } = Astro.props;
   if (still != null) document.documentElement.classList.add('still-mode');
   const boot = () => {
     import('../scene/main')
-      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]'), still }))
+      .then((m) => m.start(host, { projects: JSON.parse(host.dataset.projects ?? '[]'), books: JSON.parse(host.dataset.books ?? '[]'), still }))
       .catch(() => host.classList.add('fallback'));
   };
   const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(boot, { timeout: 1500 }) : setTimeout(boot, 200));

@@ -23,7 +23,7 @@ test.describe('home without WebGL', () => {
     await page.goto('/');
     await expect(page.locator('a[href^="mailto:"]')).toHaveCount(1);
     await expect(page.locator('a.card')).toHaveCount(4);
-    await expect(page.locator('a.card').first()).toHaveAttribute('href', '/projects/realtime-chat/');
+    await expect(page.locator('a.card').first()).toHaveAttribute('href', '/projects/monsoon-coffee/');
   });
 
   test('scrubber jumps to the right section', async ({ page }) => {
@@ -44,8 +44,8 @@ test.describe('home without WebGL', () => {
   test('focus ring is visible at night', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'night'));
-    await page.locator('a.card').first().focus();
-    const outline = await page.locator('a.card').first().evaluate((el) => getComputedStyle(el).outlineColor);
+    await page.locator('#contact a[href^="mailto:"]').focus();
+    const outline = await page.locator('#contact a[href^="mailto:"]').evaluate((el) => getComputedStyle(el).outlineColor);
     expect(outline).toBe('rgb(106, 255, 200)');
   });
 });

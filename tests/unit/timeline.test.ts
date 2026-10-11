@@ -35,7 +35,7 @@ describe('sampleTimeline', () => {
   });
   it('is the smoothstep midpoint between keyframes', () => {
     const s = sampleTimeline(0.5);
-    expect(s.position[0]).toBeCloseTo((12 + 1.4) / 2);
+    expect(s.position[0]).toBeCloseTo((KEYFRAMES[0].position[0] + KEYFRAMES[1].position[0]) / 2);
     expect(s.viewOffset).toBeCloseTo(0);
   });
   it('clamps out-of-range input', () => {
@@ -85,6 +85,13 @@ describe('progressFromSections', () => {
     expect(progressFromSections(4100, tops, 4500)).toBeGreaterThan(4);
     expect(progressFromSections(4100, tops, 4500)).toBeLessThan(5);
   });
+  it('with a ramp, holds each section and moves only over the last ramp px', () => {
+    expect(progressFromSections(1500, tops, 5000, 400)).toBe(1); // 2200 - 400 = 1800: still holding
+    expect(progressFromSections(1800, tops, 5000, 400)).toBe(1);
+    expect(progressFromSections(2000, tops, 5000, 400)).toBeCloseTo(1.5);
+    expect(progressFromSections(2200, tops, 5000, 400)).toBeCloseTo(2);
+    expect(progressFromSections(2800, tops, 5000, 5000)).toBeCloseTo(2.75); // a ramp longer than the span is linear
+  });
   it('clamps negatives and handles zero max scroll', () => {
     expect(progressFromSections(-50, tops, 5000)).toBe(0);
     expect(progressFromSections(0, tops, 0)).toBe(0);
@@ -109,10 +116,12 @@ describe('frameOffset', () => {
   it('tablet: 60% shift', () => {
     expect(frameOffset(0.2, 900, 900).x).toBeCloseTo(-108);
   });
-  it('phone: 30% shift and subject in top half', () => {
+  it('phone: no shift, subject centred in the room card', () => {
     const o = frameOffset(0.2, 390, 844);
-    expect(o.x).toBeCloseTo(-23.4);
-    expect(o.y).toBeCloseTo(0.22 * 844);
+    expect(o.x).toBe(0);
+    expect(o.y).toBe(0);
+    expect(frameOffset(0, 390, 844, -0.1).y).toBeCloseTo(-0.1 * 844);
+    expect(frameOffset(0, 1440, 900, -0.1).y).toBe(0); // phone-only
   });
 });
 
