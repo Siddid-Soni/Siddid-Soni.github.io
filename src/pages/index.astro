@@ -43,7 +43,7 @@ const [hero, about, projects, skills, after, contact] = SECTIONS;
         {featured.map((p, i) => <ProjectCard slug={p.id} title={p.data.title} summary={p.data.summary} stack={p.data.stack} accent={p.data.accent} index={i} />)}
       </div>
       <div class="pager" aria-hidden="true">{featured.map(() => <i />)}</div>
-      <a class="more" href={SITE.github}>More on GitHub <span aria-hidden="true">↗</span></a>
+      <a class="btn more" href={SITE.github}>More on GitHub <span aria-hidden="true">↗</span></a>
     </Section>
     <Section def={skills} index={3}>
       <dl class="rows skills deck" tabindex="0">

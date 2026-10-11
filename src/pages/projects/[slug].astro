@@ -14,7 +14,14 @@ const pad = (k: number) => String(k).padStart(2, '0');
 // The browser frame's address bar shows where the thing lives: the live site, else the repo.
 const where = (links.live ?? links.repo ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '');
 ---
-<Base title={`${title} · ${SITE.name}`} description={summary}>
+<Base title={`${title} · ${SITE.name}`} description={`${summary.replace(/\.$/, '')}. A case study by ${SITE.name}, built with ${stack.join(', ')}.`}
+  type="article" image={screenshot} imageAlt={screenshot && `Screenshot of ${title}`} jsonLd={{
+    '@type': 'CreativeWork', '@id': new URL(`/projects/${p.id}/#work`, Astro.site).href, name: title, description: summary,
+    url: new URL(`/projects/${p.id}/`, Astro.site).href, keywords: stack.join(', '),
+    author: { '@id': new URL('/#person', Astro.site).href },
+    ...(screenshot && { image: new URL(screenshot, Astro.site).href }),
+    ...((links.repo || links.live) && { sameAs: [links.live, links.repo].filter(Boolean) }),
+  }}>
   <div class="case" style={`--a1: ${accent[0]}; --a2: ${accent[1]}`}>
     <header class="case-bar">
       <a class="case-back" href="/#projects"><span aria-hidden="true">←</span> Back to all work</a>

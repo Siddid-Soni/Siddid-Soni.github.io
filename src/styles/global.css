@@ -29,6 +29,9 @@ a { color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
 .kicker { display: flex; align-items: center; gap: 12px; font: 600 13px/1 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 1.1rem; }
 .kicker::before { content: ''; width: 28px; height: 1px; background: currentColor; opacity: .6; }
+/* Room under the last line for descenders, which background-clip: text would otherwise cut off. Always applied, so the
+   layout doesn't shift when the theme flips. */
+.neon { padding-bottom: .12em; margin-bottom: .28em; }
 [data-theme='night'] .neon {
   background: linear-gradient(90deg, #ff6ad5, #ffd36a, #6affc8);
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -85,6 +88,7 @@ main { position: relative; z-index: 1; }
 .sec--center .kicker { justify-content: center; }
 .sec--center .kicker::after { content: ''; width: 28px; height: 1px; background: currentColor; opacity: .6; }
 .lead { font-size: 20px; line-height: 1.55; }
+#hero .lead { max-width: 36ch; }
 .muted { color: var(--muted); }
 
 /* Buttons: mono caps to match the kickers and clock. */
@@ -95,7 +99,7 @@ main { position: relative; z-index: 1; }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--fg) 45%, transparent); }
 .btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .btn--primary { background: var(--fg); color: var(--bg); border-color: transparent; }
-[data-theme='night'] .btn--primary { background: linear-gradient(100deg, #ff6ad5, #ffd36a 55%, #6affc8); color: #120a24; box-shadow: 0 0 28px -6px rgb(255 106 213 / 0.55); }
+[data-theme='night'] .btn--primary { background: linear-gradient(100deg, #ff6ad5, #ffd36a 55%, #6affc8) border-box; color: #120a24; box-shadow: 0 0 28px -6px rgb(255 106 213 / 0.55); }
 [data-theme='night'] .btn--primary:hover { box-shadow: 0 0 36px -4px rgb(255 106 213 / 0.7); }
 .btn--lg { padding: 16px 26px; font: 800 clamp(18px, 1.7vw, 23px)/1 var(--font-head); letter-spacing: -0.01em; text-transform: none; }
 .btn--icon { width: 54px; height: 54px; padding: 0; position: relative; }
@@ -106,9 +110,9 @@ main { position: relative; z-index: 1; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2rem; }
 
 /* Scroll cue: a drop of light running down a hairline. */
-.cue, .more { display: inline-flex; align-items: center; gap: 14px; margin-top: 2.6rem; font: 600 12px/1 var(--font-mono); letter-spacing: .14em;
+.cue { display: inline-flex; align-items: center; gap: 14px; margin-top: 2.6rem; font: 600 12px/1 var(--font-mono); letter-spacing: .14em;
   text-transform: uppercase; text-decoration: none; color: var(--muted); }
-.more { gap: 6px; margin-top: 1.2rem; }
+.more { margin-top: 1.4rem; }
 .cue-line { position: relative; width: 1.5px; height: 38px; overflow: hidden; background: color-mix(in srgb, currentColor 22%, transparent); }
 .cue-line::after { content: ''; position: absolute; inset: 0 0 auto; height: 40%; background: currentColor; animation: drip 2.2s cubic-bezier(.6, 0, .4, 1) infinite; }
 @keyframes drip { from { transform: translateY(-100%); } to { transform: translateY(260%); } }

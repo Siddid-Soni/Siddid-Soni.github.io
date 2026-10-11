@@ -5,9 +5,30 @@ import '@fontsource/jetbrains-mono/latin-600.css';
 import '../styles/global.css';
 import { SITE } from '../config';
 
-interface Props { title?: string; description?: string; theme?: 'day' | 'night' }
-const { title = `${SITE.name} · ${SITE.role}`, description = SITE.tagline, theme = 'day' } = Astro.props;
+interface Props {
+  title?: string; description?: string; theme?: 'day' | 'night';
+  image?: string; imageAlt?: string; type?: 'website' | 'article'; jsonLd?: Record<string, unknown>;
+}
+const {
+  title = `${SITE.name} · ${SITE.role}`,
+  description = `${SITE.name}, backend engineer in India: event-driven, high-throughput services in Rust. Projects, case studies and contact.`,
+  theme = 'day', image = '/og.png', imageAlt = `${SITE.name}, ${SITE.role.toLowerCase()}: a 3D room that runs from morning to midnight`,
+  type = 'website', jsonLd,
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image, Astro.site);
+// Who the site is about, for search engines; pages can add their own node (a case study) to the graph.
+const person = {
+  '@type': 'Person', '@id': new URL('/#person', Astro.site).href, name: SITE.name, jobTitle: SITE.role,
+  description: SITE.tagline, url: Astro.site!.href, email: `mailto:${SITE.email}`,
+  sameAs: [SITE.github, SITE.linkedin], knowsAbout: SITE.languages.map((l) => l.name),
+  homeLocation: { '@type': 'Country', name: 'India' },
+};
+const graph = { '@context': 'https://schema.org', '@graph': [
+  person,
+  { '@type': 'WebSite', '@id': new URL('/#website', Astro.site).href, url: Astro.site!.href, name: SITE.name, author: { '@id': person['@id'] } },
+  ...(jsonLd ? [jsonLd] : []),
+] };
 ---
 <!doctype html>
 <html lang="en" data-theme={theme}>
@@ -16,13 +37,26 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content={SITE.name} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href={canonical} />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <link rel="me" href={SITE.github} />
+    <link rel="me" href={SITE.linkedin} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL('/og.png', Astro.site)} />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+    <script type="application/ld+json" set:html={JSON.stringify(graph)} />
     <meta name="theme-color" content="#f3e6d6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
