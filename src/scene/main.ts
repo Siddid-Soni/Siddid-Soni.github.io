@@ -161,6 +161,12 @@ export async function start(host: HTMLElement, opts: StartOptions) {
   canvas.style.opacity = '0';
   host.prepend(canvas);
   monitor.tick(performance.now()); // upload the screen texture during warm-up too
+  // Warm up under the opening lighting and camera, so the first frame compiles nothing new.
+  const s0 = sampleTimeline(current, undefined, { reducedMotion: reduced });
+  applyLighting(scene, lights, room, s0.lighting);
+  room.setSteam(Math.min(1, Math.max(0, 1.8 - current)));
+  camera.position.set(...s0.position);
+  camera.lookAt(...s0.lookAt);
   await warmUp(renderer, scene, camera);
   canvas.style.opacity = '';
   raf = requestAnimationFrame(frame);

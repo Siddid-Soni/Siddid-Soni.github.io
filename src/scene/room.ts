@@ -336,7 +336,7 @@ export function buildRoom(opts: { neonScale?: number; screenTexture?: THREE.Text
     sunbeam.intensity = k * 5;
     shaft.material.opacity = k * 0.16;
     motes.material.opacity = k * 0.9;
-    shaft.visible = sunbeam.visible = motes.visible = k > 0.001;
+    shaft.visible = motes.visible = k > 0.001; // the spotlight stays on at 0: toggling a light recompiles every material
   };
   setBeam(0);
   const setSteam = (k: number) => { steam.material.opacity = k * 0.8; steam.visible = k > 0.001; };
