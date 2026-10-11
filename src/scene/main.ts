@@ -96,6 +96,7 @@ export async function start(host: HTMLElement, opts: StartOptions) {
     dirty = true;
   };
   resize();
+  await yieldToMain(); // sizing the drawing buffer and the first warm-up render are each long; keep them apart
 
   const onProgress = (e: Event) => { if (opts.still == null) { target = (e as CustomEvent<{ f: number }>).detail.f; dirty = true; } };
   const onPointer = (e: PointerEvent) => { mouse = { x: (e.clientX / innerWidth) * 2 - 1, y: -(e.clientY / innerHeight) * 2 + 1 }; dirty = true; };

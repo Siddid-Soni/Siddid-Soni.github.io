@@ -3,7 +3,7 @@
     "collect": {
       "staticDistDir": "./dist",
       "url": ["http://localhost/index.html", "http://localhost/projects/monsoon-coffee/index.html"],
-      "numberOfRuns": 2,
+      "numberOfRuns": 3,
       "settings": { "formFactor": "mobile" }
     },
     "assert": {

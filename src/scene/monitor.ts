@@ -110,7 +110,7 @@ export function createMonitor(projects: MonitorProject[], opts: { cycle?: boolea
     setGame(on: boolean) { game = on; if (on && !layersRequested) loadLayers(); },
     /** The slug on screen (null: the code screen). */
     get shown() { return shown === GAME ? 'game' : shown ?? null; },
-    /** Whether a recording may play: the monitor is in view and the page is visible. */
+    /** Whether the monitor is in view and the page is visible: recordings play and the projects take turns only then. */
     setActive(on: boolean) { if (on !== active) { active = on; sync(); } },
     /** Returns true when the texture changed this tick. */
     tick(now: number): boolean {
@@ -118,6 +118,8 @@ export function createMonitor(projects: MonitorProject[], opts: { cycle?: boolea
       if (focused) {
         idx = Math.max(0, projects.findIndex((p) => p.slug === focused));
         nextAt = -1;
+      } else if (cycle && projects.length && !active) {
+        nextAt = -1; // the queue only moves while the screen is in view: a crossfade is a full texture upload and render
       } else if (cycle && projects.length) {
         if (resume) nextAt = now + RESUME; // let go: stay on it a moment, then carry on from there
         else if (nextAt < 0) nextAt = now + CYCLE;

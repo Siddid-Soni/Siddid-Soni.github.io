@@ -16,6 +16,7 @@ describe('monitor', () => {
   it('takes turns, holds a focused project, and carries on from it after a pause', async () => {
     const { createMonitor } = await import('../../src/scene/monitor');
     const m = createMonitor(P, { load: () => Promise.reject(new Error('none')) });
+    m.setActive(true);
     run(m, 0, 400);
     expect(m.shown).toBe('a');
     run(m, 400, 6400);
@@ -28,6 +29,18 @@ describe('monitor', () => {
     expect(m.shown).toBe('c'); // a moment's pause
     run(m, 22300, 22900);
     expect(m.shown).toBe('a'); // then the one after it
+  });
+
+  it('holds the shown project while the screen is out of view', async () => {
+    const { createMonitor } = await import('../../src/scene/monitor');
+    const m = createMonitor(P, { load: () => Promise.reject(new Error('none')) });
+    run(m, 0, 20000);
+    expect(m.shown).toBe('a'); // never in view: no turns
+    m.setActive(true);
+    run(m, 20000, 25900);
+    expect(m.shown).toBe('a'); // a full turn from when it came into view
+    run(m, 25900, 26500);
+    expect(m.shown).toBe('b');
   });
 
   it('switches to the after-hours game and back', async () => {
